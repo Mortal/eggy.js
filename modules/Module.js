@@ -8,18 +8,17 @@ function Module() {
 		var lines = data.toString().split('\n');
 		for (var i = 0, l = lines.length; i < l; ++i) {
 			if (lines[i].length) {
-				console.log(lines[i]);
 				self.emit('line', lines[i]);
 			}
 		}
-	});
-	self.on('line', function (line) {
-		console.log("Got line "+line);
 	});
 }
 sys.inherits(Module, process.EventEmitter);
 Module.prototype.say = function (to, msg) {
 	this.bot.write('say '+to+' '+msg+'\n');
+};
+Module.prototype.respond = function (msg) {
+	this.say(this.recipient, msg);
 };
 Module.prototype.addHandler = function (type, regex, cb) {
 	var self = this;
@@ -44,7 +43,9 @@ Module.prototype.addHandler = function (type, regex, cb) {
 
 		var o = rest.match(re);
 		if (o) {
-			cb.call(self, {from: from, to: to, line: line, arg: o[1] || '', capture: o});
+			console.log("Handling: "+rest);
+			self.recipient = to;
+			cb.call(self, {from: from, to: to, line: rest, arg: o[1] || '', capture: o});
 		}
 	});
 };
