@@ -58,4 +58,7 @@ Module.prototype.command = function (regex, cb) {
 Module.prototype.notcommand = function (regex, cb) {
 	this.addHandler('notcommand', regex, cb);
 };
+Module.prototype.catchall = function (cb) {
+	this.addHandler('notcommand', '.', cb);
+};
 exports.Module = Module;
