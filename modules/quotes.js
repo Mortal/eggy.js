@@ -2,7 +2,7 @@ var Module = require('./Module').Module,
 		fs = require('fs');
 var m = new Module();
 fs.readFile('quotes.txt', function (err, data) {
-	if (err) {console.log(err.toString()); return;}
+	if (err) {m.debug(err.toString()); return;}
 	var quotes = data.toString().split('\n');
 	if (quotes.length > 0 && quotes[quotes.length-1] == '') quotes.pop();
 	function writequotes() {
