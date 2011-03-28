@@ -9,4 +9,6 @@ for i in $*; do
 	node modules/$i.js & PIDS="$PIDS $!"
 	echo $!
 done
-read j
+while sleep 60; do
+	:
+done
