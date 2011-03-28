@@ -100,5 +100,7 @@ m.catchall(function (data) {
 	log(channel, "<"+data.from+"> "+data.line);
 });
 m.event(function (data) {
-	log(data.to, '* '+data.line);
+	if (data.to.charAt(0) != '#') return;
+	var channel = data.to.substring(1, data.to.length);
+	log(channel, '* '+data.line);
 });
