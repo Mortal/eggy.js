@@ -49,3 +49,8 @@ m.notcommand('.', function (data) {
 	swallowlines[line] = new Date;
 	mc.write('say '+line+'\n');
 });
+m.event(function (data) {
+	var line = "* "+data.line;
+	swallowlines[line] = new Date;
+	mc.write('say '+line+'\n');
+});
