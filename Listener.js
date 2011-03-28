@@ -39,6 +39,7 @@ Listener.prototype.receiveLine = function (line) {
 };
 
 Listener.prototype.debug = function (msg) {
+  console.log(msg);
 };
 
 Listener.commands = {};
@@ -54,6 +55,7 @@ Listener.commands.notcommand = function (args) {
 };
 Listener.commands.event = function (args) {
   var self = this;
+  self.debug("Handling events");
   var listeners = {
     join: function (channel, who) {
       self.socket.write('event '+channel+' '+who+' joined channel '+channel+'\n');
@@ -61,11 +63,25 @@ Listener.commands.event = function (args) {
     part: function (channel, who, reason) {
       self.socket.write('event '+channel+' '+who+' leaves channel '+channel+' ('+reason+')\n');
     },
+    quit: function (who, reason, channels) {
+      for (var i = 0, l = channels.length; i < l; ++i) {
+	var channel = channels[i];
+	self.socket.write('event '+channel+' '+who+' leaves channel '+channel+' ('+reason+')\n');
+      }
+    },
     kick: function (channel, who, by, reason) {
       self.socket.write('event '+channel+' '+who+' was kicked out of '+channel+' by '+by+' ('+reason+')\n');
     },
     topic: function (channel, topic, who) {
       self.socket.write('event '+channel+' '+who+' changed topic of '+channel+' to: '+topic+'\n');
+    },
+    nick: function (oldnick, newnick, channels) {
+      console.log(oldnick+" "+newnick);
+      self.debug("Changed nick in "+channels.length+" channels");
+      for (var i = 0, l = channels.length; i < l; ++i) {
+	var channel = channels[i];
+	self.socket.write('event '+channel+' '+oldnick+' changed nick to '+newnick+'\n');
+      }
     }
   };
   for (var ev in listeners) {
