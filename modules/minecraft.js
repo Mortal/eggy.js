@@ -22,6 +22,29 @@ mc.on('login', function (username) {
 mc.on('logout', function (username, reason) {
 	m.say('#concerned', username+' quit Minecraft: '+reason);
 });
+mc.on('command', function (username, command) {
+	if (command == 'list') {
+		mc.command('list');
+		mc.once('list', function (list) {
+			mc.say('Connected players: '+list);
+		});
+	}
+});
+mc.on('unknown', function (line) {
+	mc.say(line);
+	m.say('#concerned', line);
+});
+mc.on('exception', function (lines) {
+	var line = lines[0];
+	mc.say(line);
+	m.say('#concerned', line);
+});
+/*
+mc.on('warning', function (line) {
+	mc.say(line);
+	m.say('#concerned', line);
+});
+*/
 m.notcommand('.', function (data) {
 	var line = data.from+": "+data.line;
 	mc.say(line);
