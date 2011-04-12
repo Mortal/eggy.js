@@ -3,13 +3,15 @@ var Module = require('./Module').Module,
 		lolmc = require('lolmc');
 var m = new Module();
 var mc = new lolmc.Minecraft();
+function broadcast(msg, src) {
+	if (src != 'irc') m.say('#concerned', msg.replace(/Alakala/gi, 'kala'));
+	if (src != 'mc') mc.say(msg);
+}
 mc.on('message', function (sender, message) {
-	var line = sender+": "+message;
-	m.say('#concerned', line.replace(/Alakala/gi, 'kala'));
+	broadcast(sender+": "+message, 'mc');
 });
 mc.on('consolemessage', function (message) {
-	var line = "[Console] "+message;
-	m.say('#concerned', line.replace(/Alakala/gi, 'kala'));
+	broadcast("[Console] "+message, 'mc');
 });
 mc.on('latency', function (latency) {
 	if (latency > 2000) {
@@ -17,10 +19,10 @@ mc.on('latency', function (latency) {
 	}
 });
 mc.on('login', function (username) {
-	m.say('#concerned', username+' is now playing Minecraft');
+	broadcast(username+' is now playing Minecraft', 'mc');
 });
 mc.on('logout', function (username, reason) {
-	m.say('#concerned', username+' quit Minecraft: '+reason);
+	broadcast(username+' quit Minecraft: '+reason, 'mc');
 });
 mc.on('command', function (username, command) {
 	if (command == 'list') {
@@ -31,25 +33,14 @@ mc.on('command', function (username, command) {
 	}
 });
 mc.on('unknown', function (line) {
-	mc.say(line);
-	m.say('#concerned', line);
+	broadcast(line);
 });
 mc.on('exception', function (lines) {
-	var line = lines[0];
-	mc.say(line);
-	m.say('#concerned', line);
+	broadcast(lines[0]);
 });
-/*
-mc.on('warning', function (line) {
-	mc.say(line);
-	m.say('#concerned', line);
-});
-*/
 m.notcommand('.', function (data) {
-	var line = data.from+": "+data.line;
-	mc.say(line);
+	broadcast(data.from+": "+data.line, 'irc');
 });
 m.event(function (data) {
-	var line = "* "+data.line;
-	mc.say(line);
+	broadcast("* "+data.line, 'irc');
 });
