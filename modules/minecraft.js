@@ -5,7 +5,7 @@ var m = new Module();
 var mc = new lolmc.Minecraft();
 function broadcast(msg, src) {
 	if (src != 'irc') m.say('#concerned', msg.replace(/Alakala/gi, 'kala'));
-	if (src != 'mc') mc.say(msg);
+	if (src != 'mc') mc.say(msg.replace(/(.{100})..*/, '$1 [trunc]'));
 }
 mc.on('message', function (sender, message) {
 	broadcast(sender+": "+message, 'mc');
