@@ -67,10 +67,6 @@ mc.on('command', function (username, command) {
 		});
 	}
 });
-mc.on('unknown', function (line) {
-	if (0 === line.indexOf('0, 0')) return;
-	broadcast(line);
-});
 mc.on('exception', function (lines) {
 	broadcast(lines[0]);
 });
