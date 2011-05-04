@@ -37,6 +37,7 @@ Module.prototype.addHandler = function (type, regex, cb) {
 	 */
 	var self = this;
 	var re = regex ? new RegExp(regex) : null;
+	self.debug(type+(regex ? ' '+regex : ''));
 	self.bot.write(type+(regex ? ' '+regex : '')+'\n');
 	self.on('line', function (line) {
 		var spc = line.indexOf(' ');
