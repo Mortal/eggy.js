@@ -67,20 +67,20 @@ mc.on('command', function (username, command) {
 		});
 	}
 });
-mc.on('exception', function (lines) {
-	broadcast(lines[0]);
-});
+//mc.on('exception', function (lines) {
+//	broadcast(lines[0]);
+//});
 m.notcommand('.', function (data) {
 	broadcast(mccolors[nickcolor(data.from)]+data.from+": \xA7f"+data.line, 'irc');
 });
 m.event(function (data) {
 	broadcast("\xA77* "+data.line, 'irc');
 });
-m.simplecommand('tnt', function (data) {
-	self.debug(JSON.stringify(data));
-	if (data.from == 'Pii_' || data.from == 'rav') {
-		m.debug("Num: "+data.capture[1]);
-		var num = data.capture[1] || 64;
-		mc.command('give hiekkaa 46 '+num);
-	}
-});
+//m.simplecommand('tnt', function (data) {
+//	self.debug(JSON.stringify(data));
+//	if (data.from == 'Pii_' || data.from == 'rav') {
+//		m.debug("Num: "+data.capture[1]);
+//		var num = data.capture[1] || 64;
+//		mc.command('give hiekkaa 46 '+num);
+//	}
+//});
