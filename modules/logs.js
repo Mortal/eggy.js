@@ -17,7 +17,7 @@ function makelogin(data) {
   function hex32() {
     return hex8()+hex8()+hex8()+hex8();
   }
-  var login = hex32();
+  var login = hex8();
   var secret = hex32();
   fs.writeFile('/home/rav/www/logs.lolwh.at/logins/'+login, secret, function (err) {
     if (err) {
