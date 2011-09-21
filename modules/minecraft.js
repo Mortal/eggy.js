@@ -70,6 +70,10 @@ mc.on('command', function (username, command) {
 //mc.on('exception', function (lines) {
 //  broadcast(lines[0]);
 //});
+m.simplecommand('restart minecraft', function (data) {
+  broadcast('Restarting server');
+  mc.command('stop');
+});
 m.notcommand('.', function (data) {
   broadcast(mccolors[nickcolor(data.from)]+data.from+": \xA7f"+data.line, 'irc');
 });
