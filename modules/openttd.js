@@ -25,11 +25,7 @@ function broadcast(msg, src) {
   if (src != 'game') gamesay(msg);
 }
 
-function gameline(msg) {
-  console.log(msg);
-  var o = msg.match(/^.?\[All\] (.*)/);
-  console.log(o);
-  if (!o) return;
+function gameline_spoken(o) {
   var line = o[1];
   o = line.match(/^: (.*)/);
   console.log(o);
@@ -45,6 +41,16 @@ function gameline(msg) {
     }
   }
   broadcast(line, 'game');
+}
+
+function gameline(msg) {
+  var o;
+  o = msg.match(/^.?\[All\] (.*)/);
+  if (o) return gameline_spoken(o);
+  o = msg.match(/^\*\*\* ([^ ]+) has joined the game/);
+  if (o) return broadcast(o[1]+' has joined OpenTTD', '');
+  o = msg.match(/^\*\*\* ([^ ]+) has left the game(.*)/);
+  if (o) return broadcast(o[1]+' has left OpenTTD'+o[2], '');
 }
 
 var linebuffer = '';
