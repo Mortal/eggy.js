@@ -24,7 +24,7 @@ function gamesay(msg) {
 }
 
 function broadcast(msg, src) {
-  if (src != 'irc') m.say('#concerned', msg.replace(/^([^ ]*)/, '\x0302$1\x0F'));
+  if (src != 'irc') m.say('#concerned', msg.replace(/^([^ ]*:)/, '\x0302$1\x0F'));
   if (src != 'game') gamesay(msg);
 }
 
@@ -70,13 +70,19 @@ function ConvertYMDToDate(y,m,d) {
   days += days_till(y);
 }
 
-var current_year, nextyear_timer = null;
+var announced_year, current_year, nextyear_timer = null;
+
+var should_announce_new_year = true;
 
 function nextyear() {
   nextyear_timer = null;
   ++current_year;
   set_next_year_timer(leapyear(current_year) ? 366 : 365);
-  broadcast('Happy new year! It is now the year '+current_year, '');
+  if (should_announce_new_year) {
+    broadcast('Happy new year! It is now the year '+current_year, '');
+    announced_year = current_year;
+  }
+  should_announce_new_year = false;
 }
 
 function set_next_year_timer(days_left) {
@@ -102,9 +108,9 @@ function gameline(msg) {
   var o;
   o = msg.match(/^.?\[All\] (.*)/);
   if (o) return gameline_spoken(o);
-  o = msg.match(/^\*\*\* ([^ ]+) has joined the game/);
+  o = msg.match(/^\*\*\* (.*) has joined the game/);
   if (o) return broadcast(o[1]+' has joined OpenTTD', '');
-  o = msg.match(/^\*\*\* ([^ ]+) has left the game(.*)/);
+  o = msg.match(/^\*\*\* (.*) has left the game(.*)/);
   if (o) return broadcast(o[1]+' has left OpenTTD'+o[2], '');
   o = msg.match(/^Date: (\d+)-(\d+)-(\d+)$/);
   if (o) return gameline_date(o);
@@ -112,7 +118,6 @@ function gameline(msg) {
 
 var linebuffer = '';
 function conndata(data) {
-  console.log("data length: "+data.toString().length);
   var s = data.toString();
   var lines = s.split(/\n+/);
   lines[0] = linebuffer + lines[0];
@@ -134,6 +139,12 @@ m.simplecommand('restart minecraft', function (data) {
 */
 m.notcommand('.', function (data) {
   broadcast(data.from+": "+data.line, 'irc');
+
+  if (current_year != announced_year) {
+    broadcast('It is the year '+current_year, '');
+    announced_year = current_year;
+  }
+  should_announce_new_year = true;
 });
 m.event(function (data) {
   broadcast("* "+data.line, 'irc');
