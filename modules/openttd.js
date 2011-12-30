@@ -129,9 +129,15 @@ OpenTTDBridge.prototype.set_next_year_timer = function (days_left) {
   if (days_left < 0) return console.log("Negative days_left: "+days_left+'\n'+new Error().stack);
   var self = this;
   if (this.nextyear_timer != null) this.clear_next_year_timer();
-  this.nextyear_timer = setTimeout(function () {
-    return self.nextyear.apply(self, arguments);
-  }, days_left * 74 * 30);
+  if (days_left < 20) {
+    this.nextyear_timer = setTimeout(function () {
+      return self.nextyear.apply(self, arguments);
+    }, days_left * 74 * 30);
+  } else {
+    this.nextyear_timer = setTimeout(function () {
+      return self.conn.write("getdate\n");
+    }, (days_left-10) * 74 * 30);
+  }
 };
 
 OpenTTDBridge.prototype.clear_next_year_timer = function () {
