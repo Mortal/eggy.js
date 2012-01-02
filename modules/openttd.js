@@ -204,7 +204,8 @@ OpenTTDBridge.prototype.gameline_date = function (o) {
 
 OpenTTDBridge.prototype.gameline_company = function (o) {
   var id = o[1], color = o[2], name = o[3];
-  this.companies[id] = {id: id, color: color, name: name};
+  var src = this.new_companies ? this.new_companies : this.companies;
+  src[id] = {id: id, color: color, name: name};
 };
 
 OpenTTDBridge.prototype.gameline_client = function (o) {
@@ -212,7 +213,38 @@ OpenTTDBridge.prototype.gameline_client = function (o) {
   if (ip === 'server') {
     return;
   }
-  this.clients[name] = {id: id, name: name, companyid: companyid, ip: ip};
+  var src = this.new_clients ? this.new_clients : this.clients;
+  src[name] = {id: id, name: name, companyid: companyid, ip: ip};
+};
+
+OpenTTDBridge.prototype.gameline_left = function (name, reason) {
+  this.broadcast(name+' has left OpenTTD'+reason, 'game');
+  delete this.clients[name];
+};
+
+OpenTTDBridge.prototype.gameline_join = function (name, id) {
+  this.broadcast(name+' has joined OpenTTD', 'game');
+  this.clients[name] = {id: id, name: name, companyid: null, ip: null};
+  this.refresh_clients();
+};
+
+OpenTTDBridge.prototype.refresh_clients = function () {
+  var self = this;
+  if (this.refreshClientsTimer != null) clearTimeout(this.refreshClientsTimer);
+  this.refreshClientsTimer = setTimeout(function () {
+    self.refresh_clients_end();
+  }, 100);
+  this.conn.write('clients\ncompanies\n');
+  this.new_clients = {};
+  this.new_companies = {};
+};
+
+OpenTTDBridge.prototype.refresh_clients_end = function () {
+  this.refreshClientsTimer = null;
+  this.clients = this.new_clients;
+  this.new_clients = null;
+  this.companies = this.new_companies;
+  this.new_companies = null;
 };
 
 OpenTTDBridge.prototype.gameline = function (msg) {
@@ -221,10 +253,10 @@ OpenTTDBridge.prototype.gameline = function (msg) {
   if (msg.charCodeAt(0) == 8206) msg = msg.substring(1, msg.length);
   o = msg.match(/^\[All\] (.*)/);
   if (o) return this.gameline_spoken(o);
-  o = msg.match(/^\*\*\* (.*) has joined the game/);
-  if (o) return this.broadcast(o[1]+' has joined OpenTTD', '');
+  o = msg.match(/^\*\*\* (.*) has joined the game \(Client #(\d+)\)/);
+  if (o) return this.gameline_join(o[1]);
   o = msg.match(/^\*\*\* (.*) has left the game(.*)/);
-  if (o) return this.broadcast(o[1]+' has left OpenTTD'+o[2], '');
+  if (o) return this.gameline_left(o[1], o[2]); 
   o = msg.match(/^Date: (\d+)-(\d+)-(\d+)$/);
   if (o) return this.gameline_date(o);
   o = msg.match(/^#:(\d+)\(([^)]*)\)\s+Company Name:\s+'(.*)'/);
