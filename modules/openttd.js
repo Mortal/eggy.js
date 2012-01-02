@@ -6,6 +6,13 @@ var Module = require('./Module').Module,
 
 var m = new Module();
 
+var ottd;
+
+function restart_ottd_bridge() {
+  if (ottd) ottd.stop();
+  ottd = new OpenTTDBridge();
+}
+
 function OpenTTDBridge() {
   var self = this;
 
@@ -19,6 +26,10 @@ function OpenTTDBridge() {
     console.log("Error");
     console.log(e);
     console.log(e ? e.stack : '');
+    if (!conn.readable) restart_ottd_bridge();
+  });
+  conn.on('end', function (e) {
+    restart_ottd_bridge();
   });
 
   this.linessaid = [];
@@ -34,6 +45,9 @@ function OpenTTDBridge() {
   this.clients = {};
   this.companies = {};
 }
+
+OpenTTDBridge.prototype.stop = function () {
+};
 
 var irccolors = {
   Red: 4,
@@ -265,7 +279,7 @@ OpenTTDBridge.prototype.gameline = function (msg) {
   if (o) return this.gameline_client(o);
 };
 
-var ottd = new OpenTTDBridge();
+restart_ottd_bridge();
 
 /*
 m.simplecommand('restart minecraft', function (data) {
