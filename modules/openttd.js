@@ -94,15 +94,15 @@ OpenTTDBridge.prototype.init = function () {
 
 OpenTTDBridge.prototype.gamesay = function (msg) {
   var said = msg;
-  said = said.replace(/"/g, "''").replace(/[\x00-\x1F]+/g, ' ');
+  said = said.replace(/"/g, "''").replace(/\x03(\d\d?)?(,\d\d?)?|\x02|\x0F|\x1F/g, '').replace(/[\x00-\x1F]+/g, ' ');
   this.linessaid.push(said);
   this.conn.write('say "'+said+'"\n');
 };
 
 OpenTTDBridge.prototype.ircsay = function (msg) {
   var said = msg;
-  said = said.replace(/^pii_/i, 'Hiekkaa');
-  said = said.replace(/^alakala/i, 'kala');
+  said = said.replace(/^([^:]*)pii_/i, '$1Hiekkaa');
+  said = said.replace(/^([^:]*)alakala/i, '$1kala');
   m.say('#concerned', said);
 };
 
@@ -112,17 +112,20 @@ OpenTTDBridge.prototype.broadcast = function (msg, src) {
   this.announce_new_years();
 };
 
-OpenTTDBridge.prototype.gameline_spoken_client = function (msg, client) {
-  var irccolor = '';
-  var company = this.companies[client.companyid];
-  if (company) {
-    if (company.color in irccolors) {
-      var num = irccolors[company.color];
-      irccolor = '\x03'+((num < 10) ? '0' : '')+num;
-    } else {
-      console.log("Color "+company.color+" is unrecognized");
-    }
+OpenTTDBridge.prototype.company_irc_color_string = function (company) {
+  if (!company) return '';
+  if (company.color in irccolors) {
+    var num = irccolors[company.color];
+    return '\x03'+((num < 10) ? '0' : '')+num;
+  } else {
+    console.log("Color "+company.color+" is unrecognized");
+    return '';
   }
+};
+
+OpenTTDBridge.prototype.gameline_spoken_client = function (msg, client) {
+  var company = this.companies[client.companyid];
+  var irccolor = this.company_irc_color_string(company);
   this.broadcast(irccolor+client.name+': \x0F'+msg, 'game');
 };
 
@@ -267,6 +270,22 @@ OpenTTDBridge.prototype.refresh_clients_end = function () {
   this.new_companies = null;
 };
 
+OpenTTDBridge.prototype.gameline_join_company = function (name, companyid) {
+  var client = this.clients[name];
+  if (client) client.companyid = companyid;
+  if (companyid == null) {
+    this.broadcast(name+' has joined spectators', 'game');
+  } else {
+    var company = this.companies[companyid];
+    if (company) this.broadcast(name+' has joined company \''+this.company_irc_color_string(company)+company.name+'\x0F\'', '');
+    else {
+      console.log("Unknown company: "+companyid);
+      console.dir(this.companies);
+      this.broadcast(name+' has joined company #'+companyid, 'game');
+    }
+  }
+};
+
 OpenTTDBridge.prototype.gameline = function (msg) {
   var o;
   // unicode 8206 = 0x200E = left-to-right mark
@@ -283,6 +302,10 @@ OpenTTDBridge.prototype.gameline = function (msg) {
   if (o) return this.gameline_company(o);
   o = msg.match(/^Client #(\d+)\s+name:\s+'(.*)'\s+company:\s+(\d+)\s+IP:\s+(\S+)/);
   if (o) return this.gameline_client(o);
+  o = msg.match(/^\*\*\* (.*) has joined spectators/);
+  if (o) return this.gameline_join_company(o[1], null);
+  o = msg.match(/^\*\*\* (.*) has joined company #(\d+)/);
+  if (o) return this.gameline_join_company(o[1], o[2]);
 };
 
 restart_ottd_bridge();
