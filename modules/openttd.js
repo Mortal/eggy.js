@@ -156,7 +156,9 @@ OpenTTDBridge.prototype.gameline_date = function (o) {
 
 OpenTTDBridge.prototype.gameline = function (msg) {
   var o;
-  o = msg.match(/^.?\[All\] (.*)/);
+  // unicode 8206 = 0x200E = left-to-right mark
+  if (msg.charCodeAt(0) == 8206) msg = msg.substring(1, msg.length);
+  o = msg.match(/^\[All\] (.*)/);
   if (o) return this.gameline_spoken(o);
   o = msg.match(/^\*\*\* (.*) has joined the game/);
   if (o) return this.broadcast(o[1]+' has joined OpenTTD', '');
