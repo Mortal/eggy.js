@@ -16,27 +16,33 @@ function restart_ottd_bridge() {
 function OpenTTDBridge() {
   var self = this;
 
-  var conn = this.conn = net.createConnection('/home/rav/openttd-1.1.4-linux-generic-amd64/openttd.sock');
+  var conn = this.conn = new net.Socket({
+    type: 'unix',
+    allowHalfOpen: false
+  });
 
   conn.on('connect', function () {
     console.log("Connected to openttd socket");
+
+    setTimeout(function () {
+      self.init();
+    }, 500);
   });
 
   conn.on('error', function (e) {
-    console.log("Error");
+    console.log("OpenTTD socket error");
     console.log(e);
     console.log(e ? e.stack : '');
     if (!conn.readable) restart_ottd_bridge();
   });
+
   conn.on('end', function (e) {
     restart_ottd_bridge();
   });
 
-  this.linessaid = [];
+  conn.connect('/home/rav/openttd-1.1.4-linux-generic-amd64/openttd.sock');
 
-  setTimeout(function () {
-    self.init();
-  }, 500);
+  this.linessaid = [];
 
   this.announced_year = this.current_year = -1;
   this.nextyear_timer = null;
