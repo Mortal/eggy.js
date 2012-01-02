@@ -23,37 +23,66 @@ function OpenTTDBridge() {
 
   this.linessaid = [];
 
-  var linebuffer = '';
   setTimeout(function () {
-    conn.on('data', function (data) {
-      var s = data.toString();
-      var lines = s.split(/\n+/);
-      lines[0] = linebuffer + lines[0];
-      for (var i = 0, l = lines.length-1; i < l; ++i) {
-	self.gameline(lines[i]);
-      }
-      linebuffer = lines[l];
-    });
-    conn.write('getdate\n');
+    self.init();
   }, 500);
 
   this.announced_year = this.current_year = -1;
   this.nextyear_timer = null;
   this.should_announce_new_year = true;
+
+  this.clients = {};
+  this.companies = {};
 }
+
+var irccolors = {
+  Red: 4,
+  Yellow: 8,
+  Green: 3,
+  Blue: 2,
+  'Dark Blue': 2,
+  Brown: 7,
+  'Light Blue': 12,
+  'Light Red': 4,
+  Red: 5,
+  Purple: 6,
+  'Light Green': 9,
+  Cyan: 10,
+  Pink: 13,
+  'Dark Gray': 14,
+  Gray: 14,
+  'Pale Green': 10,
+  Cream: 7,
+  Orange: 7,
+  White: 16
+};
+
+OpenTTDBridge.prototype.init = function () {
+  var self = this;
+  var linebuffer = '';
+  this.conn.on('data', function (data) {
+    var s = data.toString();
+    var lines = s.split(/\n+/);
+    lines[0] = linebuffer + lines[0];
+    for (var i = 0, l = lines.length-1; i < l; ++i) {
+      self.gameline(lines[i]);
+    }
+    linebuffer = lines[l];
+  });
+  this.conn.write('getdate\nclients\ncompanies\n');
+};
 
 OpenTTDBridge.prototype.gamesay = function (msg) {
   var said = msg;
   said = said.replace(/"/g, "''").replace(/[\x00-\x1F]+/g, ' ');
   this.linessaid.push(said);
   this.conn.write('say "'+said+'"\n');
-}
+};
 
 OpenTTDBridge.prototype.ircsay = function (msg) {
   var said = msg;
   said = said.replace(/^pii_/i, 'Hiekkaa');
   said = said.replace(/^alakala/i, 'kala');
-  said = said.replace(/^([^ ]*:)/, '\x0302$1\x0F');
   m.say('#concerned', said);
 };
 
@@ -61,7 +90,21 @@ OpenTTDBridge.prototype.broadcast = function (msg, src) {
   if (src != 'irc') this.ircsay(msg);
   if (src != 'game') this.gamesay(msg);
   this.announce_new_years();
-}
+};
+
+OpenTTDBridge.prototype.gameline_spoken_client = function (msg, client) {
+  var irccolor = '';
+  var company = this.companies[client.companyid];
+  if (company) {
+    if (company.color in irccolors) {
+      var num = irccolors[company.color];
+      irccolor = '\x03'+((num < 10) ? '0' : '')+num;
+    } else {
+      console.log("Color "+company.color+" is unrecognized");
+    }
+  }
+  this.broadcast(irccolor+client.name+': \x0F'+msg, 'game');
+};
 
 OpenTTDBridge.prototype.gameline_spoken = function (o) {
   var line = o[1];
@@ -74,6 +117,11 @@ OpenTTDBridge.prototype.gameline_spoken = function (o) {
 	--idx;
       }
       return;
+    }
+  }
+  for (var name in this.clients) {
+    if (line.substring(0, name.length+2) === name+': ') {
+      return this.gameline_spoken_client(line.substring(name.length+2, line.length), this.clients[name]);
     }
   }
   this.broadcast(line, 'game');
@@ -154,6 +202,19 @@ OpenTTDBridge.prototype.gameline_date = function (o) {
   this.set_next_year_timer(days_left);
 };
 
+OpenTTDBridge.prototype.gameline_company = function (o) {
+  var id = o[1], color = o[2], name = o[3];
+  this.companies[id] = {id: id, color: color, name: name};
+};
+
+OpenTTDBridge.prototype.gameline_client = function (o) {
+  var id = o[1], name = o[2], companyid = o[3], ip = o[4];
+  if (ip === 'server') {
+    return;
+  }
+  this.clients[name] = {id: id, name: name, companyid: companyid, ip: ip};
+};
+
 OpenTTDBridge.prototype.gameline = function (msg) {
   var o;
   // unicode 8206 = 0x200E = left-to-right mark
@@ -166,6 +227,10 @@ OpenTTDBridge.prototype.gameline = function (msg) {
   if (o) return this.broadcast(o[1]+' has left OpenTTD'+o[2], '');
   o = msg.match(/^Date: (\d+)-(\d+)-(\d+)$/);
   if (o) return this.gameline_date(o);
+  o = msg.match(/^#:(\d+)\(([^)]*)\)\s+Company Name:\s+'(.*)'/);
+  if (o) return this.gameline_company(o);
+  o = msg.match(/^Client #(\d+)\s+name:\s+'(.*)'\s+company:\s+(\d+)\s+IP:\s+(\S+)/);
+  if (o) return this.gameline_client(o);
 };
 
 var ottd = new OpenTTDBridge();
